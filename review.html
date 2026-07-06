@@ -1,0 +1,2772 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Framework Review — Right Brained Solutions</title>
+<style>
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --ink:#1c2430; --muted:#5d6b7e;
+  --accent:#0a66c2; --accent-soft:#e8f1fa;
+  --tactical:#eef4fb; --strategic:#f3effa;
+  --header:#1c2430; --border:#dde3ea;
+  --pending:#b87600; --pending-bg:#fff4e0;
+  --approved:#1e7f4f; --approved-bg:#e6f5ec;
+  --danger:#b3362c;
+}
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:"Segoe UI",system-ui,-apple-system,sans-serif;background:var(--bg);color:var(--ink);font-size:14px}
+button{font:inherit;cursor:pointer}
+
+/* ---------- auth gate ---------- */
+#gate{position:fixed;inset:0;background:linear-gradient(160deg,#13202f,#27435f);display:flex;align-items:center;justify-content:center;z-index:100}
+.gate-card{background:#fff;border-radius:14px;padding:38px 42px;max-width:430px;text-align:center;box-shadow:0 24px 60px rgba(0,0,0,.35)}
+.gate-card h1{font-size:19px;margin-bottom:6px}
+.gate-card p{color:var(--muted);font-size:13px;line-height:1.5;margin-bottom:22px}
+.btn-li{display:flex;align-items:center;justify-content:center;gap:9px;width:100%;background:var(--accent);color:#fff;border:none;border-radius:24px;padding:11px;font-size:15px;font-weight:600}
+.btn-li:hover{background:#084d92}
+.gate-alt{margin-top:12px;background:none;border:1px solid var(--border);border-radius:24px;width:100%;padding:9px;color:var(--muted)}
+.gate-note{margin-top:18px;font-size:11px;color:#9aa6b5}
+
+/* ---------- top bar ---------- */
+header.bar{position:sticky;top:0;z-index:40;background:var(--panel);border-bottom:1px solid var(--border);display:flex;align-items:center;gap:14px;padding:10px 18px}
+header.bar h1{font-size:15px;font-weight:700}
+header.bar .ver{font-size:11px;color:var(--muted);background:var(--bg);border:1px solid var(--border);border-radius:10px;padding:2px 8px}
+.spacer{flex:1}
+.who{display:flex;align-items:center;gap:8px;font-size:12.5px;color:var(--muted)}
+.avatar{width:26px;height:26px;border-radius:50%;background:var(--accent);color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:12px}
+.pill{border:1px solid var(--border);background:var(--panel);border-radius:16px;padding:5px 12px;font-size:12.5px;color:var(--ink)}
+.pill.active{background:var(--accent);border-color:var(--accent);color:#fff}
+.badge-count{background:var(--pending);color:#fff;border-radius:9px;padding:0 6px;font-size:11px;margin-left:4px}
+
+/* ---------- legend ---------- */
+.legend{display:flex;gap:16px;align-items:center;padding:8px 18px;font-size:12px;color:var(--muted);flex-wrap:wrap}
+.key{display:inline-flex;align-items:center;gap:5px}
+.swatch{width:12px;height:12px;border-radius:3px;border:1px solid var(--border)}
+
+/* ---------- grid ---------- */
+#gridWrap{overflow:auto;padding:6px 18px 80px}
+#grid{min-width:max-content}
+.band{display:flex;gap:10px}
+.bcol{width:158px;flex:0 0 158px;display:flex;flex-direction:column;gap:5px}
+#tactBand .bcol{justify-content:flex-end}
+.head{background:var(--header);color:#fff;border-radius:7px;padding:9px 8px;text-align:center;font-weight:700;font-size:12.5px;line-height:1.25;margin:5px 0;flex:1;display:flex;align-items:center;justify-content:center}
+.cell{position:relative;border:1px solid var(--border);border-radius:6px;padding:7px 8px;font-size:11.5px;line-height:1.3;background:var(--panel);text-align:center;color:var(--ink)}
+.cell.tactical{background:var(--tactical)}
+.cell.strategic{background:var(--strategic)}
+.cell:hover{border-color:var(--accent);box-shadow:0 2px 8px rgba(10,102,194,.18);cursor:pointer}
+.cell .dot{position:absolute;top:4px;right:4px;width:8px;height:8px;border-radius:50%}
+.cell.has-pending .dot{background:var(--pending)}
+.cell.just-approved{outline:2px solid var(--approved)}
+.zone-banner{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.14em;color:var(--muted);padding:8px 2px}
+
+/* ---------- tooltip ---------- */
+#tip{position:fixed;z-index:60;max-width:260px;background:#1c2430;color:#fff;border-radius:8px;padding:9px 11px;font-size:12px;line-height:1.45;pointer-events:none;display:none;box-shadow:0 8px 24px rgba(0,0,0,.3)}
+#tip .t-label{font-weight:700;margin-bottom:3px}
+#tip .t-empty{color:#9fb2c8;font-style:italic}
+#tip .t-flag{margin-top:6px;color:#ffc966;font-size:11px}
+
+/* ---------- side panel ---------- */
+#panel{position:fixed;top:0;right:-440px;width:420px;max-width:95vw;height:100%;background:var(--panel);border-left:1px solid var(--border);z-index:50;display:flex;flex-direction:column;transition:right .22s ease;box-shadow:-12px 0 30px rgba(15,25,40,.12)}
+#panel.open{right:0}
+.p-head{padding:16px 18px 12px;border-bottom:1px solid var(--border)}
+.p-head .crumb{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.06em}
+.p-head h2{font-size:17px;margin-top:3px}
+.p-close{position:absolute;top:12px;right:14px;background:none;border:none;font-size:18px;color:var(--muted)}
+.p-body{flex:1;overflow-y:auto;padding:16px 18px}
+.p-sec{margin-bottom:18px}
+.p-sec h3{font-size:11px;text-transform:uppercase;letter-spacing:.07em;color:var(--muted);margin-bottom:6px}
+.current-box{background:var(--bg);border:1px solid var(--border);border-radius:8px;padding:10px 12px;font-size:13px;line-height:1.5}
+.current-box .none{color:var(--muted);font-style:italic}
+.tabs{display:flex;gap:6px;margin-bottom:12px}
+.tab{flex:1;border:1px solid var(--border);background:var(--panel);border-radius:8px;padding:7px;font-size:12.5px;color:var(--muted)}
+.tab.on{background:var(--accent-soft);border-color:var(--accent);color:var(--accent);font-weight:600}
+label.f{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+input[type=text],textarea{width:100%;border:1px solid var(--border);border-radius:8px;padding:8px 10px;font:inherit;font-size:13px;background:#fff}
+textarea{min-height:84px;resize:vertical}
+.submit{margin-top:14px;width:100%;background:var(--accent);color:#fff;border:none;border-radius:8px;padding:10px;font-weight:600}
+.submit:hover{background:#084d92}
+.flash{margin-top:10px;font-size:12.5px;color:var(--approved);display:none}
+
+/* suggestion list items */
+.sugg{border:1px solid var(--border);border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:12.5px;background:#fff}
+.sugg .meta{display:flex;justify-content:space-between;color:var(--muted);font-size:11px;margin-bottom:5px}
+.sugg .diff{margin:4px 0}
+.sugg .old{color:var(--danger);text-decoration:line-through}
+.sugg .new{color:var(--approved)}
+.st{font-size:10.5px;border-radius:8px;padding:1px 7px;font-weight:600}
+.st.pending{background:var(--pending-bg);color:var(--pending)}
+.st.approved{background:var(--approved-bg);color:var(--approved)}
+.st.rejected{background:#fbe9e7;color:var(--danger)}
+.sugg .acts{margin-top:8px;display:flex;gap:6px}
+.acts button{border-radius:7px;border:1px solid var(--border);padding:5px 12px;font-size:12px;background:#fff}
+.acts .ok{background:var(--approved);border-color:var(--approved);color:#fff}
+.acts .no{color:var(--danger)}
+
+/* ---------- admin drawer ---------- */
+#queue{position:fixed;left:0;right:0;bottom:-60vh;height:55vh;background:var(--panel);border-top:2px solid var(--accent);z-index:45;transition:bottom .22s ease;display:flex;flex-direction:column;box-shadow:0 -10px 30px rgba(15,25,40,.15)}
+#queue.open{bottom:0}
+.q-head{display:flex;align-items:center;gap:10px;padding:12px 18px;border-bottom:1px solid var(--border)}
+.q-head h2{font-size:14px}
+.q-body{flex:1;overflow-y:auto;padding:14px 18px}
+.q-empty{color:var(--muted);font-size:13px;padding:18px 0;text-align:center}
+.mock-note{background:var(--pending-bg);border:1px solid #f0d9a8;color:#7a5200;font-size:12px;border-radius:8px;padding:8px 12px;margin:8px 18px 0}
+</style>
+</head>
+<body>
+
+<!-- ===================== AUTH GATE ===================== -->
+<div id="gate">
+  <div class="gate-card">
+    <h1>Framework Review &amp; Collaboration</h1>
+    <p>Invited reviewers only. Sign in to suggest edits and comments on the IT Certification Program Management Framework. Your name appears on your suggestions.</p>
+    <button class="btn-li" onclick="signIn('reviewer')">
+      <svg width="18" height="18" viewBox="0 0 24 24" fill="currentColor"><path d="M20.45 20.45h-3.56v-5.57c0-1.33-.02-3.04-1.85-3.04-1.85 0-2.14 1.45-2.14 2.94v5.67H9.34V9h3.41v1.56h.05c.48-.9 1.64-1.85 3.37-1.85 3.6 0 4.27 2.37 4.27 5.46v6.28zM5.34 7.43a2.06 2.06 0 1 1 0-4.13 2.06 2.06 0 0 1 0 4.13zM7.12 20.45H3.55V9h3.57v11.45zM22.22 0H1.77C.79 0 0 .77 0 1.72v20.55C0 23.23.79 24 1.77 24h20.45c.98 0 1.78-.77 1.78-1.73V1.72C24 .77 23.2 0 22.22 0z"/></svg>
+      Sign in with LinkedIn
+    </button>
+    <button class="gate-alt" onclick="signIn('admin')">Owner sign-in (Paul) — demo</button>
+    <div class="gate-note">Prototype: sign-in is simulated. In production this button redirects to your n8n LinkedIn OIDC flow, which checks the invite allowlist before issuing a session. See README.</div>
+  </div>
+</div>
+
+<!-- ===================== APP ===================== -->
+<header class="bar">
+  <h1 id="fwTitle">IT Certification Program Management Framework</h1>
+  <span class="ver" id="fwVer"></span>
+  <div class="spacer"></div>
+  <button class="pill" id="myBtn" onclick="togglePanelMine()">My suggestions<span class="badge-count" id="myCount" style="display:none"></span></button>
+  <button class="pill" id="adminBtn" style="display:none" onclick="toggleQueue()">Review queue<span class="badge-count" id="qCount" style="display:none"></span></button>
+  <div class="who" id="who"></div>
+  <button class="pill" onclick="signOut()">Sign out</button>
+</header>
+
+<div class="mock-note" id="mockNote"><strong>Mock mode.</strong> Suggestions are stored in this browser (localStorage) so you can demo the full submit → approve loop. Set <code>CONFIG.mockMode = false</code> and fill in your n8n webhook URLs to go live.</div>
+
+<div class="legend">
+  <span class="key"><span class="swatch" style="background:var(--tactical)"></span>Tactical (above header)</span>
+  <span class="key"><span class="swatch" style="background:var(--strategic)"></span>Strategic (below header)</span>
+  <span class="key"><span class="swatch" style="background:var(--pending);border-radius:50%"></span>Has pending suggestion</span>
+  <span>Hover a cell for its tooltip · click to suggest an edit or comment</span>
+</div>
+
+<div id="gridWrap"><div id="grid"></div></div>
+
+<div id="tip"></div>
+
+<!-- ===================== SIDE PANEL ===================== -->
+<aside id="panel">
+  <div class="p-head">
+    <button class="p-close" onclick="closePanel()">✕</button>
+    <div class="crumb" id="pCrumb"></div>
+    <h2 id="pTitle"></h2>
+  </div>
+  <div class="p-body" id="pBody"></div>
+</aside>
+
+<!-- ===================== ADMIN QUEUE ===================== -->
+<div id="queue">
+  <div class="q-head">
+    <h2>Pending suggestions</h2>
+    <span class="ver" id="qSummary"></span>
+    <div class="spacer"></div>
+    <button class="pill" onclick="exportApproved()">Export approved JSON</button>
+    <button class="pill" onclick="toggleQueue()">Close</button>
+  </div>
+  <div class="q-body" id="qBody"></div>
+</div>
+
+<script>
+/* =====================================================================
+   CONFIG — wire this to your n8n instance when ready
+   ===================================================================== */
+const CONFIG = {
+  mockMode: true,
+  n8n: {
+    // POST {cellId, type, proposedLabel, proposedTooltip, comment, user}
+    submitUrl:  "https://YOUR-N8N-HOST/webhook/framework/suggest",
+    // GET -> [{id, cellId, type, ..., status}]
+    listUrl:    "https://YOUR-N8N-HOST/webhook/framework/suggestions",
+    // POST {suggestionId, action: "approve"|"reject", reviewer}
+    decideUrl:  "https://YOUR-N8N-HOST/webhook/framework/decide",
+    // Redirect target that starts LinkedIn OIDC and checks the allowlist
+    loginUrl:   "https://YOUR-N8N-HOST/webhook/auth/linkedin"
+  },
+  // In production, framework data is fetched from the published JSON:
+  dataUrl: "framework.json"
+};
+
+/* Embedded snapshot of framework.json so this file runs standalone. */
+const FRAMEWORK = {
+ "framework": "IT Certification Program Management Framework",
+ "version": "3.2",
+ "note": "Extracted directly from the live site (data-id / data-tip attributes). Cell ids are the site's own stable ids. links.predecessors/successors are empty pending extraction of the relation map; how.* fields are reserved for the future HOW dimension.",
+ "cellSchema": {
+  "id": "site's stable data-id",
+  "label": "cell title",
+  "tooltip": "hover detail (plain text - sanitize on render)",
+  "links": {
+   "predecessors": [
+    "cell ids"
+   ],
+   "successors": [
+    "cell ids"
+   ]
+  },
+  "how": {
+   "processGuide": "markdown - future HOW dimension",
+   "useCases": [
+    "short use case entries"
+   ]
+  }
+ },
+ "disciplines": [
+  {
+   "id": "market-awareness",
+   "name": "Market Awareness",
+   "tactical": [
+    {
+     "id": "competitive-research",
+     "label": "Competitive Research",
+     "tooltip": "Know who your competitors are targeting; know their pricing; know their exam structure.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "audience-description",
+     "label": "Audience Description",
+     "tooltip": "Define the target audience persona for the certification.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "demand-gap-analysis",
+     "label": "Demand / Gap Analysis",
+     "tooltip": "Identify gaps in market skill sets vs. what the certification validates.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "candidate-segment",
+     "label": "Candidate Segmentation",
+     "tooltip": "Splitting the eligible market into prioritized groups by motivation, demographics, and access.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "addressable-market",
+     "label": "Addressable Market Sizing",
+     "tooltip": "Numeric estimate of eligible candidate population, growth rate, and realistic conversion. Similar to SAM (Serviceable Addressable Market)",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "reqs-and-titles",
+     "label": "Reqs. & Titles",
+     "tooltip": "Create the naming convention and title structure for the certification track.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "testing-and-scoring-goals",
+     "label": "Testing & Scoring Goals",
+     "tooltip": "Establish high-level targets for candidate volume, pass rates, and revenue contribution.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "program-positioning",
+     "label": "Program Positioning",
+     "tooltip": "Create a program positioning statement - how the cert is differentiated in the market.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ],
+   "strategic": [
+    {
+     "id": "audience-analysis",
+     "label": "Audience Analysis",
+     "tooltip": "Deep dive of who takes the cert, why they take it and what they do with it after taking it.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "employer-demand-analysis",
+     "label": "Employer Demand Analysis",
+     "tooltip": "Why employers require/incentivize the certification; conditions for employer-mandated adoption.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "partner-demand-analysis",
+     "label": "Partner Demand Analysis",
+     "tooltip": "How to measure partner program candidate demand.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "competitive-differentiation",
+     "label": "Competitive Differentiation Strategy",
+     "tooltip": "How the program will differentiate (brand/prestige vs. feature vs. niche focus).",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "environmental-scan",
+     "label": "Environmental Scan",
+     "tooltip": "PESTLE analysis; Political, Economic, Sociological, Technological, Legal and Environmental forces affecting the program.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "credential-value-prop",
+     "label": "Credential Value Proposition",
+     "tooltip": "Tangible and intangible benefits the credential delivers to holders, which drives all positioning.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "market-needs-analysis",
+     "label": "Market Needs Analysis",
+     "tooltip": "Market research demonstrating demand: skills shortages, industry trends, and job posting data.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "industry-awareness",
+     "label": "Industry Awareness",
+     "tooltip": "Knowledge of industry bodies, standards, and certification landscape changes.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "job-role-awareness",
+     "label": "Job Role Awareness",
+     "tooltip": "Understanding of the job roles the certification targets and how those jobs are changing.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "business-drivers",
+     "label": "Business Drivers",
+     "tooltip": "What business outcomes does the certification program serve? Revenue, pipeline, product adoption?",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "funding-model-pricing",
+     "label": "Funding Model / Pricing",
+     "tooltip": "How will the program be funded? Exam fees, training packages, partner funding? What price tiers and discounts will be offered",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ]
+  },
+  {
+   "id": "program-governance",
+   "name": "Program Governance",
+   "tactical": [
+    {
+     "id": "stage-gate-checklists",
+     "label": "Stage Gate Checklists",
+     "tooltip": "Stage Gate Checklists - what must be done before advancing from one stage of the certification process to the next (JTA to Item Writing, Beta to Live, etc.)",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "risk-and-issue-management",
+     "label": "Risk & Issue Management",
+     "tooltip": "Risk and Issue Log for Active Exam Development Projects - escalation procedures established.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "vendor-management",
+     "label": "Vendor Management",
+     "tooltip": "Management of vendors and psychometricians - service level agreements (SLAs), deliverables, contract compliance.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "tech-stack-integration-management",
+     "label": "Tech Stack Integration Management",
+     "tooltip": "Keeping the certification systems connected and functioning: item bank, delivery platform, badging, credentialing, and candidate database data flows.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "decision-log",
+     "label": "Decision Log",
+     "tooltip": "Documentation of decisions made during the certification development process for auditing purposes and institutional knowledge.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "process-and-template-library",
+     "label": "Process & Template Library",
+     "tooltip": "Templates for JTA, Blueprints, Item Writing and Standard Setting to ensure consistency across programs.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "program-budget-and-cost-model",
+     "label": "Program Budget & Cost Model",
+     "tooltip": "Line item budget for SME travel and expense, item banking tools, delivery platforms, digital badging provider, certificate tracking system (different from Learning Management System), marketing/web, and operations personnel. Review and update annually.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ],
+   "strategic": [
+    {
+     "id": "decision-rights-and-raci",
+     "label": "Decision Rights & RACI",
+     "tooltip": "Define how decisions are made - who makes decisions regarding new tracks, exam updates, pricing changes and retirement. RACI across departments.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "governance-cadence",
+     "label": "Governance Structure & Cadence",
+     "tooltip": "Frequency and format of cross-functional steering, quarterly program reviews, annual strategy sessions, and launch approvals. Without documented cadence, strategic decisions get made reactively and accountability gaps emerge.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "tech-stack-architecture",
+     "label": "Tech Stack Architecture",
+     "tooltip": "Defining the full systems landscape: which platforms are used, how they integrate, data ownership, and vendor dependency strategy.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "policy-framework",
+     "label": "Policy Framework",
+     "tooltip": "Define what constitutes a policy change versus process update versus tactical decision. Create a 'living policy handbook'.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "continuous-improvement-loop",
+     "label": "Continuous Improvement Loop",
+     "tooltip": "Continuous improvement loop - How learnings from Health Checks, Analytics, and Candidate Feedback influence program strategy.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "program-review-workshop",
+     "label": "Program Review Workshop",
+     "tooltip": "Create a formal periodic stakeholder workshop - review full certification program health checklist - cross functionally, pressure test roadmap and define next cycle priorities. Different from routine steering meetings.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "accreditation-strategy",
+     "label": "Accreditation Strategy",
+     "tooltip": "Deciding whether to pursue third-party accreditation, the timeline, and the resource commitment required.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ]
+  },
+  {
+   "id": "track-planning",
+   "name": "Track Planning",
+   "tactical": [
+    {
+     "id": "track-map-plan",
+     "label": "Track Map / Plan",
+     "tooltip": "Visual representation of the certification path - levels, prerequisites, specialty tracks.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "monitor-release-schedule",
+     "label": "Monitor Release Schedule",
+     "tooltip": "When each exam within the track will be released - scheduling and sequencing.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "align-sme-resources",
+     "label": "Align SME Resources",
+     "tooltip": "Who are the subject matter experts (SMEs) best suited for each track - identify and align.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "pricing-execution-and-vouchers",
+     "label": "Pricing Execution & Vouchers",
+     "tooltip": "Candidate volume discounts programs, retake policies, voucher management, and reconciling revenue - manage.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ],
+   "strategic": [
+    {
+     "id": "smepartner-interviews",
+     "label": "SME/Partner Interviews",
+     "tooltip": "Gather input from partner organizations and SMEs - track design, relevance, and content.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "audience-surveys",
+     "label": "Audience Surveys",
+     "tooltip": "Gather candidate preferences, skills gaps, and career path expectations.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "internal-input",
+     "label": "Internal Input",
+     "tooltip": "Gather internal stakeholder input - certification priorities, resource constraints.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "trend-analysis",
+     "label": "Trend Analysis",
+     "tooltip": "Where technology and job roles are heading - informs track roadmap.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "product-lifecycle-awareness",
+     "label": "Product Lifecycle Awareness",
+     "tooltip": "Where product is in lifecycle - affects exam longevity planning.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "trainingcertification-alignment",
+     "label": "Training-Certification Alignment",
+     "tooltip": "Ensure training content is aligned to blueprint objectives.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ]
+  },
+  {
+   "id": "exam-planning",
+   "name": "Exam Planning",
+   "tactical": [
+    {
+     "id": "candidate-profile",
+     "label": "Candidate Profile",
+     "tooltip": "Minimally qualified candidate definition - anchor for standard setting.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "sme-interviews",
+     "label": "SME Interviews",
+     "tooltip": "Interviews with practicing professionals - structured interviews to understand job task requirements.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "retirement-revision-strategy",
+     "label": "Retirement / Revision Strategy",
+     "tooltip": "How the exam will be updated, replaced, or retired as technology changes.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "recertification-plan",
+     "label": "Recertification Plan",
+     "tooltip": "When candidates must recertify/renew to maintain their credential (cadence and criteria). Also covers the operational processing layer: how CEU submissions are received and verified, who audits continuing competency claims, and what happens when a candidate fails to renew (grace periods, lapsed status, reinstatement pathway). ISO/IEC 17024 Section 7.4 requires documented maintenance-of-certification procedures. Design the policy and the processing workflow together.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "identified-legal-policies",
+     "label": "Identified Legal Policies",
+     "tooltip": "Known legal requirements: NDAs, IP ownership, accessibility obligations, and testing regulations.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ],
+   "strategic": [
+    {
+     "id": "assessment-methodology",
+     "label": "Assessment Methodology",
+     "tooltip": "Select assessment methodology - form-based, adaptive (CAT), performance-based (PBT), or hybrid.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "psychometrician-engagement",
+     "label": "Psychometrician Engagement",
+     "tooltip": "Engage and contract external psychometrician (where applicable).",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "delivery-vendor-selection",
+     "label": "Delivery Vendor Selection",
+     "tooltip": "Select and contract exam delivery and proctoring vendor(s) - (Pearson VUE, Prometric, PSI, Kryterion, Examity etc.).",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "item-banking-platform-selection",
+     "label": "Item Banking Platform Selection",
+     "tooltip": "Choosing the right item banking tool is a strategic exam planning decision (Certiverse, Alpine, Questionmark etc.), distinct from delivery vendor selection.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "credentialing-architecture-platform",
+     "label": "Credentialing Architecture / Platform",
+     "tooltip": "Decide how credentials will be issued, displayed, and verified. Evaluate managed platforms (e.g., Alpine Testing's CM Connect) vs. self-hosted infrastructure.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "compliance-and-accessibility",
+     "label": "Compliance & Accessibility",
+     "tooltip": "ADA/Accessibility compliance plan, GDPR/Data Privacy for global candidates, and legal defensibility framework.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ]
+  },
+  {
+   "id": "sme-progam-management",
+   "name": "SME Progam Management",
+   "tactical": [
+    {
+     "id": "sme-recruitment-and-onboarding",
+     "label": "SME Recruitment & Onboarding",
+     "tooltip": "Recruit, screen, and onboard SMEs. Manage diversity of job role, geography, and employer type.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "nda-and-agreement-tracking",
+     "label": "NDA & Agreement Tracking",
+     "tooltip": "Which SMEs have signed NDAs, completed training, and are cleared for workshop participation.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "conflict-of-interest-management",
+     "label": "Conflict of Interest Management",
+     "tooltip": "Conflicts of interest - Identify and document (training SMEs separated from exam development SMEs)",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "sme-performance-evaluation",
+     "label": "SME Performance Evaluation",
+     "tooltip": "Evaluating SME contributions on collaboration, quality, efficiency, expertise and exam data etc..",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "sme-appreciation-and-retention",
+     "label": "SME Appreciation & Retention",
+     "tooltip": "Social recognition, letters of recommendation, endorsements, and program outcome updates.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "workshop-facilitation",
+     "label": "Workshop Facilitation",
+     "tooltip": "Schedule, facilitate, and document JTA, IDW, and standard setting workshops.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ],
+   "strategic": [
+    {
+     "id": "sme-pool-strategy",
+     "label": "SME Pool Strategy",
+     "tooltip": "Define size, composition, and diversity targets for SME pool - establish ongoing pipeline of qualified contributors.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "sme-value-proposition",
+     "label": "SME Value Proposition",
+     "tooltip": "Develop sustainable SME community with clear value proposition.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "sme-training-design",
+     "label": "SME Training Design",
+     "tooltip": "Create SME curriculum training - standards for item writing, bloom's taxonomy, bias awareness, legal obligations etc...",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "certification-sme-advisory-board",
+     "label": "Certification SME Advisory Board",
+     "tooltip": "Standing body of senior SMEs provide ongoing program direction, external credibility to credential, and retention/recognition vehicle for top contributors. Different from workshop participants. Could also serve as your program evangelists.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ]
+  },
+  {
+   "id": "exam-design-development",
+   "name": "Exam Design & Development",
+   "tactical": [
+    {
+     "id": "item-banking-platform-management",
+     "label": "Item Banking Platform Management",
+     "tooltip": "The day-to-day administration of the item banking tool (user access, item workflows, version control, vendor relationship).",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "job-task-analysis-jta",
+     "label": "Job Task Analysis (JTA)",
+     "tooltip": "Job Task Analysis workshop - documents KSAs for the job role. Output: blueprint, objectives, and candidate definitions.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "exam-blueprints",
+     "label": "Exam Blueprints",
+     "tooltip": "Detailed outline of exam content: objectives, weightings, section structure.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "item-writing",
+     "label": "Item Writing",
+     "tooltip": "Exam questions created by SMEs, reviewed for accuracy, relevance, and difficulty.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "assessment-translation-localization",
+     "label": "Assessment Translation & Localization",
+     "tooltip": "Translating exam content into other languages and adapting for regional terminology, cultural context, and locally relevant examples. Define best practices: translation, back-translation verification, and bilingual SME cultural review.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "beta-testing-and-analysis",
+     "label": "Beta Testing & Analysis",
+     "tooltip": "Beta exam with real candidates - statistical analysis of item performance before scoring becomes operational. Could also publish an Operational Beta as an option.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "standard-setting",
+     "label": "Standard Setting",
+     "tooltip": "Psychometrician and SMEs determine pass/fail threshold and number of exam forms.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "forms-and-scoring",
+     "label": "Forms and Scoring",
+     "tooltip": "Final determination of scoring model and number of exam versions/forms for operational delivery.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "exam-delivery",
+     "label": "Exam Delivery",
+     "tooltip": "Assembly of exam in delivery platform and quality assurance.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "exam-security-management",
+     "label": "Exam Security Management",
+     "tooltip": "Design scenario-based questions as security strategy (harder to memorize), set vendor flags for suspicious activity (e.g. completion time, score spikes), country blacklist, refresh exam content silently so brain-dump sites fall behind.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ],
+   "strategic": [
+    {
+     "id": "item-format-strategy",
+     "label": "Item Format Strategy",
+     "tooltip": "Item format should match the cognitive level required. E.g., scenario-based items deliver higher construct validity and are significantly harder to brain-dump than standalone MC items.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "passing-score-philosophy",
+     "label": "Passing Score Philosophy",
+     "tooltip": "Some common standard-setting methods: Modified Angoff, Bookmark, Contrasting Groups. The Minimally Qualified Candidate (MQC) definition must be written and agreed before the standard setting workshop.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "item-bank-architecture",
+     "label": "Item Bank Architecture",
+     "tooltip": "Define how item pool will be maintained, equated, and updated across exam lifecycle.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ]
+  },
+  {
+   "id": "insights-analytics",
+   "name": "Insights & Analytics",
+   "tactical": [
+    {
+     "id": "monitor-customer-feedback",
+     "label": "Monitor Customer Feedback",
+     "tooltip": "Candidate feedback on exam difficulty, content relevance, testing experience.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "monitor-track-performance",
+     "label": "Monitor Track Performance",
+     "tooltip": "Performance of each track against enrollment and pass rate targets.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "item-performance-data",
+     "label": "Item Performance Data",
+     "tooltip": "Item-level data - difficulty index, discrimination index, distractor analysis.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "pass-rate-and-score-distribution",
+     "label": "Pass Rate & Score Distribution",
+     "tooltip": "Track the pass rate and score distribution analysis of each form as well as drift across forms and versions.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "candidate-demographics",
+     "label": "Candidate Demographics",
+     "tooltip": "Candidate demographics - geography, employer type, job role, retakes.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "candidate-satisfaction-data",
+     "label": "Candidate Satisfaction Data",
+     "tooltip": "Candidate satisfaction data - NPS, post-exam surveys, community sentiment - capture and analyze.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "psychometric-health-review",
+     "label": "Psychometric Health Review",
+     "tooltip": "Regular psychometric health check - statistical review of item performance across forms.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "inservice-analysis",
+     "label": "In-Service Analysis",
+     "tooltip": "Statistical review conducted post-launch prior to full psychometric health check. Validates top performers score high, novices score low, borderline candidates cluster near cut score. Confirms exam measures correctly.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ],
+   "strategic": [
+    {
+     "id": "identify-addon-tracks",
+     "label": "Identify Add-on Tracks",
+     "tooltip": "Opportunities to extend certification into adjacent tracks or specializations.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "determine-marketing-needs",
+     "label": "Determine Marketing Needs",
+     "tooltip": "Additional marketing investment needed - determine where to focus.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "product-cur-lifecycle-monitoring",
+     "label": "Product / Cur. Lifecycle Monitoring",
+     "tooltip": "Monitoring product and curriculum lifecycle to anticipate when exam updates will be required.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "analytics-architecture",
+     "label": "Analytics Architecture",
+     "tooltip": "Define what candidate, item, and program data is collected; how it flows; who has access at each stage. ISO/IEC 17024 Section 8 requires records management procedures. GDPR Article 30 requires a Record of Processing Activities (ROPA) if you process EU candidate data. Data minimization: collect only what is needed for psychometric validity and program improvement. Establish a retention schedule.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "program-kpi-framework",
+     "label": "Program KPI Framework",
+     "tooltip": "Define KPIs and OKRs for the certification program.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "roi-modeling",
+     "label": "ROI Modeling",
+     "tooltip": "ROI of certification program using data - candidate earning uplift, partner revenue correlation etc...",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ]
+  },
+  {
+   "id": "external-comms",
+   "name": "External Comms",
+   "tactical": [
+    {
+     "id": "datasheets",
+     "label": "Datasheets",
+     "tooltip": "Product fact sheets and certification program datasheets for candidates.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "delivery-platform-updates",
+     "label": "Delivery Platform Updates",
+     "tooltip": "Always keep exam delivery platform pages, scheduling links, and pricing current.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "presentations-web-events",
+     "label": "Presentations / Web Events",
+     "tooltip": "Promotion through webinars/virtual, and conference events.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "community-updates",
+     "label": "Community Updates",
+     "tooltip": "Update certification communities, user groups, social channels.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "segmented-emails",
+     "label": "Segmented Emails",
+     "tooltip": "Email campaigns targeted to candidate segments by role, level, product area, region etc..",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "branded-ui-updates",
+     "label": "Branded UI Updates",
+     "tooltip": "Branded exam UI, and candidate-facing interfaces.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "partner-channel-comms",
+     "label": "Partner Channel Comms",
+     "tooltip": "Communication strategy for authorized training providers, resellers, channel partners.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "faq-and-call-deflection",
+     "label": "FAQ & Call Deflection",
+     "tooltip": "Searchable FAQ as first line of support for candidates - comprehensive, searchable. Update FAQs with every recurring support inquiry. Your website is call deflection center - easy to find, easy to use, always current.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "credentialed-professional-registry",
+     "label": "Credentialed Professional Registry",
+     "tooltip": "Public directory of certified individuals where candidates can share and employers can verify. Supports ecosystem proof points, supports recruiter discovery, provides certified professionals with shareable profile artifact.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ],
+   "strategic": [
+    {
+     "id": "identify-audiences",
+     "label": "Identify Audiences",
+     "tooltip": "Identify and segment audiences who should receive different messaging.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "product-positioning",
+     "label": "Product Positioning",
+     "tooltip": "Position certification relative to competitors and alternatives.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "marketing-coordination",
+     "label": "Marketing Coordination",
+     "tooltip": "Coordinate with marketing on integrated campaigns and content calendar.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "employer-adoption-strategy",
+     "label": "Employer Adoption Strategy",
+     "tooltip": "Strategy for employer and partner adoption - how do you get companies to require/recognize certification?",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "demand-generation-strategy",
+     "label": "Demand Generation Strategy",
+     "tooltip": "Push-pull demand generation, subscription programs for training revenue forecasting, salary survey participation, advertising in industry publications, or test prep offerings that pull candidates into funnel rather than losing those candidates to brain dump sites.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ]
+  },
+  {
+   "id": "internal-comms",
+   "name": "Internal Comms",
+   "tactical": [
+    {
+     "id": "instructor-reference-guides",
+     "label": "Instructor Reference Guides",
+     "tooltip": "Instructor/trainers supporting certification candidates.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "internal-presentations",
+     "label": "Internal Presentations",
+     "tooltip": "Presentations for internal stakeholders regarding program status and results.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "internal-release-announcements",
+     "label": "Internal Release Announcements",
+     "tooltip": "Notices to internal teams regarding new exams/tracks released.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "internal-site-updates",
+     "label": "Internal Site Updates",
+     "tooltip": "Internal knowledge base, intranet pages, team sites - keep current.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "training-partners-atc-enablement",
+     "label": "Training Partners / ATC Enablement",
+     "tooltip": "Onboarding and enablement content for Authorized Training Centers.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ],
+   "strategic": [
+    {
+     "id": "project-justification-approval",
+     "label": "Project Justification / Approval",
+     "tooltip": "Business case and secure budget/resources approval for new certification initiatives.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "build-key-contacts",
+     "label": "Build Key Contacts",
+     "tooltip": "Identify key internal and external stakeholders who need to be informed and involved. Formalize the stakeholder engagement in your program governance.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "executive-steering-and-okrs",
+     "label": "Executive Steering & OKRs",
+     "tooltip": "Cross-functionally review program health, OKRs, and strategic direction regularly via scheduled executive meetings.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ]
+  },
+  {
+   "id": "readiness-gtm",
+   "name": "Readiness / GTM",
+   "tactical": [
+    {
+     "id": "cs-and-fulfillment-readiness",
+     "label": "CS & Fulfillment Readiness",
+     "tooltip": "Verify that all customer service and examination fulfillment processes are able to handle the expected number of candidates.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "measurement-and-feedback",
+     "label": "Measurement & Feedback",
+     "tooltip": "Use candidate and stakeholder feedback to guide actions after launch (i.e., post-launch).",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "delivery-readiness",
+     "label": "Delivery Readiness",
+     "tooltip": "Verify that all delivery infrastructure has been put into production and tested in a complete end-to-end fashion prior to launch.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "sales-readiness",
+     "label": "Sales Readiness",
+     "tooltip": "Prepares sales teams with messaging on competitive position and value propositions of certification.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "candidate-experience-audit",
+     "label": "Candidate Experience Audit",
+     "tooltip": "Reviews candidate experience post-launch (registration process, score reporting, issuing badges etc..)",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "digital-badge-readiness",
+     "label": "Digital Badge Readiness",
+     "tooltip": "Verifies that badging is live, the data used to create the badge is correct and issuance is triggered.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "credentialing-platform-readiness",
+     "label": "Credentialing Platform Readiness",
+     "tooltip": "Verifies the certification logic is correct and displaying the credentials as per.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "delivery-badging-platform-management",
+     "label": "Delivery & Badging Platform Management",
+     "tooltip": "The ongoing post-launch management of the exam delivery platform and badge issuance pipeline, separate from initial readiness checks.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "exam-launch-checklist",
+     "label": "Exam Launch Checklist",
+     "tooltip": "A per-exam Go-Live Checklist addressing operational readiness, alerting stakeholders, promoting marketing initiatives, updating FAQs, and sending company-wide communications. This is separate from the gateways related to development, it will be the operational launch sign-off for each new individual exam.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ],
+   "strategic": [
+    {
+     "id": "candidate-journey-design",
+     "label": "Candidate Journey Design",
+     "tooltip": "Identify the entire candidate experience from awareness through credential display (post-cert experience, renewal path).",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "recertification-experience",
+     "label": "Recertification Experience",
+     "tooltip": "Define the recertification candidate experience (what does renewing involve?); Design continuous education pathways for candidates.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ]
+  },
+  {
+   "id": "candidate-support",
+   "name": "Candidate Support",
+   "tactical": [
+    {
+     "id": "help-desk-and-ticket-management",
+     "label": "Help Desk & Ticket Management",
+     "tooltip": "Handle incoming candidate inquiries on exam scheduling, score reports, voucher redemption, and platform access. First line of resolution before escalation.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "ada-accommodation-request-processing",
+     "label": "ADA / Accommodation Request Processing",
+     "tooltip": "Review, approve, and coordinate accommodation requests for candidates with disabilities. Liaise with your delivery vendors to ensure accommodations are correctly applied at the testing center or remote session.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "formal-appeals-management",
+     "label": "Disputes & Appeals Management",
+     "tooltip": "Process structured appeals where candidates contest exam fairness, content accuracy, or scoring. Manage within defined policy timelines and escalation paths with independent review.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "exam-incident-management",
+     "label": "Exam Incident Management",
+     "tooltip": "Handle technical failures during exam delivery including system crashes, proctor issues, connectivity problems, and test center incidents. Coordinate resolution with delivery vendor and determine candidate remedy.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "cheating-and-misconduct-investigations",
+     "label": "Cheating & Misconduct Investigations",
+     "tooltip": "Investigate flagged candidates based on unusual score patterns, completion time anomalies, proxy testing suspicions, or confirmed brain dump use. Document findings and apply resolution framework.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "refund-and-reschedule-management",
+     "label": "Refund & Reschedule Management",
+     "tooltip": "Process exam cancellations, reschedule requests, no-shows, and refund eligibility determinations in accordance with program policy.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "badge-and-certificate-issuance-support",
+     "label": "Badge & Certificate Issuance Support",
+     "tooltip": "Resolve cases where candidates have not received or cannot access their digital badge or certificate after completing all requirements. Coordinate with badging and credentialing platforms.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "eligibility-and-prerequisites-support",
+     "label": "Eligibility & Prerequisites Support",
+     "tooltip": "Answer candidate questions about exam eligibility, prerequisites, and registration requirements. Reduce ticket volume by ensuring this information is clearly published and searchable.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "credentialing-applications-processing",
+     "label": "Credentialing Applications Processing",
+     "tooltip": "The ongoing operational function of processing eligibility applications, verifying candidate qualifications against program requirements, making eligibility determinations, and formally awarding credentials post-exam. Distinct from Eligibility & Prerequisites Support (reactive Q&A); which is the back-office processing operation. You must have an audit trail for each eligibility determination and credential award decision.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ],
+   "strategic": [
+    {
+     "id": "support-policy-design",
+     "label": "Support Policy Design",
+     "tooltip": "Define the policies governing appeals, refunds, accommodations, and misconduct including timelines, decision authority, and candidate communication standards.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "cheating-resolution-framework",
+     "label": "Cheating Resolution Framework",
+     "tooltip": "Define the end-to-end process for investigating misconduct allegations, the evidence threshold for action, the range of consequences, and the appeals rights of the accused candidate.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "ada-accessibility-policy",
+     "label": "ADA / Accessibility Policy",
+     "tooltip": "Define what accommodations are offered, eligibility and documentation criteria, approval authority, and vendor compliance requirements. Ensure alignment with ADA and applicable regional regulations.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "sla-definition-and-monitoring",
+     "label": "SLA Definition & Monitoring",
+     "tooltip": "Set response time standards across support tiers (first response, resolution, escalation). Monitor adherence and use SLA data to identify staffing or process gaps.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "support-platform-selection",
+     "label": "Support Platform Selection",
+     "tooltip": "Select and manage the ticketing or CRM platform used for candidate support operations. Define workflows, tagging taxonomy, and integration with the candidate database.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "escalation-framework",
+     "label": "Escalation Framework",
+     "tooltip": "Define when and how issues escalate beyond frontline support including who has authority to make final decisions on disputes, misconduct rulings, and policy exceptions.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "support-analytics-and-feedback-loop",
+     "label": "Support Analytics & Feedback Loop",
+     "tooltip": "Track ticket volume, resolution times, and recurring issue types. Use data to identify program gaps, improve self-service content, and feed findings back into governance and exam planning and support documentation.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ]
+  },
+  {
+   "id": "partner-channel",
+   "name": "Partner / Channel",
+   "tactical": [
+    {
+     "id": "certified-team-compliance-tracking",
+     "label": "Certified Team Compliance Tracking",
+     "tooltip": "Monitor the % and count of each partner organization. Flag partners below the threshold and trigger outreach or remediation plans.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "partner-program-tier-management",
+     "label": "Partner Program Tier Management",
+     "tooltip": "Manage partner tier status based on certification achievements including processing upgrades, downgrades, and notifying partners of status changes that affect program benefits.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "partner-voucher-management",
+     "label": "Partner Voucher Management",
+     "tooltip": "Distribute exam vouchers to partners, manage redemption, track consumption by partner organization and role. Reconcile against partner tier entitlements.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "partner-onboarding-and-enablement",
+     "label": "Partner Onboarding & Enablement",
+     "tooltip": "Onboard new partners to the certification program.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "partner-channel-comms-1",
+     "label": "Partner Channel Comms",
+     "tooltip": "Regular comms to the partner network: new exam launches, blueprint updates, pricing changes, program incentives, and certification news. Differentiate messaging by partner tier.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "partner-nps-and-satisfaction-monitoring",
+     "label": "Partner NPS & Satisfaction Monitoring",
+     "tooltip": "Track partner NPS, post-exam satisfaction scores, and partner feedback on the certification program. Use data to improve the partner experience.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "rpci-and-deal-impact-tracking",
+     "label": "RPCI & Deal Impact Tracking",
+     "tooltip": "Monitor Revenue Per Certified Individual (RPCI) by partner organization. Use this as a leading indicator: IDC research shows more certified staff = greater revenue per certified individual.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ],
+   "strategic": [
+    {
+     "id": "partner-value-proposition",
+     "label": "Partner Value Proposition",
+     "tooltip": "Define and document the business case for partner certification. IDC: fully certified teams are 35% more likely to finish ahead of schedule, meet 95% of client objectives, and score 36% higher NPS than partially certified teams.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "partner-program-architecture",
+     "label": "Partner Program Architecture",
+     "tooltip": "Design the partner certification program structure: tier levels (e.g. Authorized, Premier, Elite), certification requirements per tier per role, and progression pathways for partner organizations.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "channel-adoption-and-incentive-strategy",
+     "label": "Channel Adoption & Incentive Strategy",
+     "tooltip": "Define the incentive strategy to drive partner certification adoption: tier benefits, deal registration advantages, MDF eligibility, co-marketing rights, and recognition programs etc.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "partner-skill-requirements-by-role",
+     "label": "Partner Skill Requirements by Role",
+     "tooltip": "Define which certifications are required for each partner role (Architect, Admin, Developer, Sales Engineer, etc.) aligned to the partner's engagement model.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "partner-roi-framework",
+     "label": "Partner ROI Framework",
+     "tooltip": "Build the ROI model for the partner program e.g., using Revenue Per Certified Individual (RPCI) data, deal size correlation, project success rates, and customer satisfaction metrics. Use to make the internal business case and to market the program to partners.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "partner-demand-generation-strategy",
+     "label": "Partner Demand Generation Strategy",
+     "tooltip": "Strategy to generate demand from partner organizations for certification: executive briefings, case study data, salary/revenue uplift data, and recognition programs that create internal partner pressure to certify.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ]
+  },
+  {
+   "id": "candidate-engagement",
+   "name": "Candidate Engagement",
+   "tactical": [
+    {
+     "id": "application-completion-monitoring",
+     "label": "Application Completion Monitoring",
+     "tooltip": "Track where candidates drop off in the application and scheduling funnel. Application completion rate is a primary leading indicator of funnel health. Flag stalled registrations and trigger re-engagement outreach before candidates go cold.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "candidate-onboarding-comms",
+     "label": "Candidate Onboarding Comms",
+     "tooltip": "Welcome sequence for newly registered candidates: confirmation, scheduling guidance, study resource links, and exam-day expectations. A structured onboarding sequence directly reduces no-shows and early-stage dropout.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "behavioral-trigger-messaging",
+     "label": "Behavioral Trigger Messaging",
+     "tooltip": "Automated messages triggered by candidate actions or inaction: nudges for unfinished applications, encouragement for candidates who did not pass, reminders before voucher or eligibility expiry. Alpine Testing's CM Connect and similar platforms support trigger-based delivery tied to candidate status changes.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "study-support-and-prep",
+     "label": "Study Support & Prep",
+     "tooltip": "Provide practice exams, exam guides, and pre-exam check-ins to reduce candidate anxiety and dropout. Study support at the right moments directly impacts pass rates and NPS. Candidates who feel supported are significantly more likely to complete and recommend the program.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "post-exam-follow-up",
+     "label": "Post-Exam Follow-Up",
+     "tooltip": "Structured outreach after every exam outcome: congratulations + badge/certificate guidance; empathetic retake pathway with resources for candidates who did not pass.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "multi-channel-outreach",
+     "label": "Multi-Channel Outreach",
+     "tooltip": "Coordinate candidate communications across email, SMS, and in-platform messaging. Channel selection should match message urgency and candidate preference data. All time-sensitive messages (exam reminders, expiry warnings) warrant SMS; content and study support suit email. Be mindful of the message intent; transactional vs. marketing.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "renewal-recertification-nudges",
+     "label": "Renewal & Recertification Nudges",
+     "tooltip": "Proactive outreach to credentialed professionals approaching expiry: renewal reminders, continuing education options, and lapsed-credential re-engagement campaigns. Renewal outreach is lower cost than acquiring a new candidate so treat it as a retention program, not an admin task.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ],
+   "strategic": [
+    {
+     "id": "candidate-engagement-strategy",
+     "label": "Candidate Engagement Strategy",
+     "tooltip": "Define the overall engagement model: which lifecycle stages require touchpoints, what outcome each touchpoint drives, and how engagement KPIs connect to program health metrics. Proactive candidate engagement reduces dropout and increases renewal rates. Do not fall into the reactive ad hoc mode.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "engagement-platform-selection",
+     "label": "Engagement Platform Selection",
+     "tooltip": "Select and configure the candidate engagement and CRM platform (or custom CRM integration). Define data flows between delivery vendor, item bank, and engagement platform. The platform must support behavioral triggers, segmentation, and multi-channel delivery to be effective.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "personalization-framework",
+     "label": "Personalization Framework",
+     "tooltip": "Define the rules engine for personalized content delivery: what triggers which message, to which segment, through which channel. Moves communications from generic blasts to behavior-driven sequences.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    },
+    {
+     "id": "post-certification-community-strategy",
+     "label": "Post-Certification Community Strategy",
+     "tooltip": "Strategy for keeping credentialed professionals engaged after certification: alumni communities, exclusive content, recognition programs, and advocacy pathways. Certifyd.co offers physical certificates for candidates to display in real life. Converts certified professionals into your evangelists and recurring exam candidates. Post-certification engagement is the lowest-cost demand generation lever available and credentialed alumni are your highest-trust marketing channel.",
+     "links": {
+      "predecessors": [],
+      "successors": []
+     },
+     "how": {
+      "processGuide": null,
+      "useCases": []
+     }
+    }
+   ]
+  }
+ ]
+};
+
+/* =====================================================================
+   State
+   ===================================================================== */
+let user = null;
+let suggestions = [];   // {id, cellId, type:'edit'|'comment', proposedLabel, proposedTooltip, comment, user, ts, status}
+let activeCellId = null;
+const LS_KEY = "rb-framework-suggestions";
+
+const cellIndex = {};
+FRAMEWORK.disciplines.forEach(d => {
+  d.tactical.forEach(c => cellIndex[c.id] = {cell:c, disc:d, zone:"Tactical"});
+  d.strategic.forEach(c => cellIndex[c.id] = {cell:c, disc:d, zone:"Strategic"});
+});
+
+/* =====================================================================
+   Auth (mock). Production: window.location = CONFIG.n8n.loginUrl and
+   n8n sets a signed session cookie after the allowlist check.
+   ===================================================================== */
+function signIn(role){
+  if (!CONFIG.mockMode) { window.location = CONFIG.n8n.loginUrl; return; }
+  user = role === "admin"
+    ? {name:"Paul Dezzutto", initials:"PD", role:"admin"}
+    : {name:"Demo Reviewer", initials:"DR", role:"reviewer"};
+  document.getElementById("gate").style.display = "none";
+  document.getElementById("adminBtn").style.display = user.role==="admin" ? "" : "none";
+  const w = document.getElementById("who");
+  w.innerHTML = "";
+  const av = document.createElement("div"); av.className="avatar"; av.textContent = user.initials;
+  const nm = document.createElement("span"); nm.textContent = user.name + (user.role==="admin" ? " · owner" : "");
+  w.append(av,nm);
+  refreshBadges();
+}
+function signOut(){ location.reload(); }
+
+/* =====================================================================
+   Persistence (mock = localStorage; live = n8n endpoints)
+   ===================================================================== */
+function loadSuggestions(){
+  if (CONFIG.mockMode){
+    try { suggestions = JSON.parse(localStorage.getItem(LS_KEY)) || []; } catch(e){ suggestions = []; }
+    // re-apply previously approved edits to the in-memory framework
+    suggestions.filter(s=>s.status==="approved" && s.type==="edit").forEach(applyEdit);
+    return Promise.resolve();
+  }
+  return fetch(CONFIG.n8n.listUrl).then(r=>r.json()).then(j=>{ suggestions = j; });
+}
+function saveLocal(){ if (CONFIG.mockMode) try { localStorage.setItem(LS_KEY, JSON.stringify(suggestions)); } catch(e){ /* storage unavailable: demo continues in-memory */ } }
+
+function submitSuggestion(payload){
+  const rec = Object.assign({
+    id: "s" + Date.now() + Math.floor(Math.random()*1e4),
+    user: user.name, ts: new Date().toISOString(), status: "pending"
+  }, payload);
+  suggestions.push(rec);
+  saveLocal();
+  if (!CONFIG.mockMode){
+    fetch(CONFIG.n8n.submitUrl, {method:"POST", headers:{"Content-Type":"application/json"}, body: JSON.stringify(rec)});
+  }
+  refreshBadges(); renderGrid();
+  return rec;
+}
+function decide(sid, action){
+  const s = suggestions.find(x=>x.id===sid); if (!s) return;
+  s.status = action === "approve" ? "approved" : "rejected";
+  s.decidedBy = user.name; s.decidedTs = new Date().toISOString();
+  if (s.status==="approved" && s.type==="edit") applyEdit(s);
+  saveLocal();
+  if (!CONFIG.mockMode){
+    fetch(CONFIG.n8n.decideUrl, {method:"POST", headers:{"Content-Type":"application/json"},
+      body: JSON.stringify({suggestionId:sid, action, reviewer:user.name})});
+  }
+  renderQueue(); renderGrid(); refreshBadges();
+  if (activeCellId) openCell(activeCellId);
+}
+function applyEdit(s){
+  const e = cellIndex[s.cellId]; if (!e) return;
+  if (s.proposedLabel)   e.cell.label   = s.proposedLabel;
+  if (s.proposedTooltip) e.cell.tooltip = s.proposedTooltip;
+  e.cell._changed = true;
+}
+
+/* =====================================================================
+   Grid
+   ===================================================================== */
+function pendingFor(cid){ return suggestions.filter(s=>s.cellId===cid && s.status==="pending"); }
+
+function renderGrid(){
+  const g = document.getElementById("grid"); g.innerHTML = "";
+  const tact = band("tactBand"), head = band("headBand"), strat = band("stratBand");
+  FRAMEWORK.disciplines.forEach(d => {
+    const tc = bcol(); d.tactical.forEach(c => tc.appendChild(cellEl(c,"tactical",d))); tact.appendChild(tc);
+    const hc = bcol(); const h = document.createElement("div"); h.className="head"; h.textContent = d.name; hc.appendChild(h); head.appendChild(hc);
+    const sc = bcol(); d.strategic.forEach(c => sc.appendChild(cellEl(c,"strategic",d))); strat.appendChild(sc);
+  });
+  g.append(zoneBanner("Tactical"), tact, head, strat, zoneBanner("Strategic"));
+}
+function band(id){ const b = document.createElement("div"); b.className="band"; b.id = id; return b; }
+function bcol(){ const c = document.createElement("div"); c.className="bcol"; return c; }
+function zoneBanner(t){ const z = document.createElement("div"); z.className="zone-banner"; z.textContent = t; return z; }
+function cellEl(c, zone, d){
+  const el = document.createElement("div");
+  el.className = "cell " + zone + (pendingFor(c.id).length ? " has-pending" : "") + (c._changed ? " just-approved" : "");
+  el.textContent = c.label;
+  const dot = document.createElement("span"); dot.className="dot"; el.appendChild(dot);
+  el.onmouseenter = e => showTip(e, c);
+  el.onmousemove  = e => moveTip(e);
+  el.onmouseleave = hideTip;
+  el.onclick = () => openCell(c.id);
+  return el;
+}
+
+/* tooltip */
+const tip = document.getElementById("tip");
+function showTip(e, c){
+  tip.innerHTML = "";
+  const l = document.createElement("div"); l.className="t-label"; l.textContent = c.label; tip.appendChild(l);
+  const b = document.createElement("div");
+  if (c.tooltip){ b.textContent = c.tooltip; } else { b.className="t-empty"; b.textContent = "No tooltip yet — click to suggest one."; }
+  tip.appendChild(b);
+  const n = pendingFor(c.id).length;
+  if (n){ const f = document.createElement("div"); f.className="t-flag"; f.textContent = "● " + n + " pending suggestion" + (n>1?"s":""); tip.appendChild(f); }
+  tip.style.display = "block"; moveTip(e);
+}
+function moveTip(e){
+  const pad = 14;
+  let x = e.clientX + pad, y = e.clientY + pad;
+  const r = tip.getBoundingClientRect();
+  if (x + r.width  > innerWidth  - 8) x = e.clientX - r.width  - pad;
+  if (y + r.height > innerHeight - 8) y = e.clientY - r.height - pad;
+  tip.style.left = x + "px"; tip.style.top = y + "px";
+}
+function hideTip(){ tip.style.display = "none"; }
+
+/* =====================================================================
+   Side panel — suggest edit / comment
+   ===================================================================== */
+function openCell(cid){
+  activeCellId = cid;
+  const {cell, disc, zone} = cellIndex[cid];
+  document.getElementById("pCrumb").textContent = disc.name + " · " + zone + " · " + cid;
+  document.getElementById("pTitle").textContent = cell.label;
+  const body = document.getElementById("pBody"); body.innerHTML = "";
+
+  // current content
+  body.appendChild(sec("Current tooltip", (()=> {
+    const box = document.createElement("div"); box.className="current-box";
+    if (cell.tooltip){ box.textContent = cell.tooltip; }
+    else { const s=document.createElement("span"); s.className="none"; s.textContent="(no tooltip yet)"; box.appendChild(s); }
+    return box;
+  })()));
+
+  // form
+  const formWrap = document.createElement("div");
+  const tabs = document.createElement("div"); tabs.className = "tabs";
+  const tEdit = mkTab("Suggest an edit", true), tCom = mkTab("Comment only", false);
+  tabs.append(tEdit, tCom); formWrap.appendChild(tabs);
+
+  const editForm = document.createElement("div");
+  editForm.innerHTML = `
+    <label class="f">Proposed label (leave unchanged to keep)</label>
+    <input type="text" id="fLabel">
+    <label class="f">Proposed tooltip text</label>
+    <textarea id="fTip"></textarea>
+    <label class="f">Why this change? (helps Paul review)</label>
+    <textarea id="fWhyE" style="min-height:56px"></textarea>`;
+  editForm.querySelector("#fLabel").value = cell.label;
+  editForm.querySelector("#fTip").value = cell.tooltip || "";
+
+  const comForm = document.createElement("div"); comForm.style.display = "none";
+  comForm.innerHTML = `
+    <label class="f">Your comment on this cell</label>
+    <textarea id="fCom"></textarea>`;
+
+  tEdit.onclick = ()=>{ tEdit.classList.add("on"); tCom.classList.remove("on"); editForm.style.display=""; comForm.style.display="none"; };
+  tCom.onclick  = ()=>{ tCom.classList.add("on"); tEdit.classList.remove("on"); comForm.style.display=""; editForm.style.display="none"; };
+
+  const btn = document.createElement("button"); btn.className="submit"; btn.textContent="Submit for review";
+  const flash = document.createElement("div"); flash.className="flash";
+  btn.onclick = ()=>{
+    if (tEdit.classList.contains("on")){
+      const pl = editForm.querySelector("#fLabel").value.trim();
+      const pt = editForm.querySelector("#fTip").value.trim();
+      const why = editForm.querySelector("#fWhyE").value.trim();
+      if (pl === cell.label && pt === (cell.tooltip||"")) { flash.style.display="block"; flash.style.color="var(--danger)"; flash.textContent="Nothing changed — edit the label or tooltip first."; return; }
+      submitSuggestion({cellId:cid, type:"edit",
+        proposedLabel: pl !== cell.label ? pl : null,
+        proposedTooltip: pt !== (cell.tooltip||"") ? pt : null,
+        comment: why});
+    } else {
+      const cm = comForm.querySelector("#fCom").value.trim();
+      if (!cm){ flash.style.display="block"; flash.style.color="var(--danger)"; flash.textContent="Comment is empty."; return; }
+      submitSuggestion({cellId:cid, type:"comment", comment:cm});
+      comForm.querySelector("#fCom").value = "";
+    }
+    flash.style.display="block"; flash.style.color="var(--approved)";
+    flash.textContent = "Submitted — Paul will be notified for approval.";
+    openCellHistory(body, cid);
+  };
+
+  formWrap.append(editForm, comForm, btn, flash);
+  body.appendChild(sec("Suggest a change", formWrap));
+  openCellHistory(body, cid);
+  document.getElementById("panel").classList.add("open");
+}
+function openCellHistory(body, cid){
+  let h = document.getElementById("cellHist");
+  if (h) h.remove();
+  const list = suggestions.filter(s=>s.cellId===cid).sort((a,b)=>b.ts.localeCompare(a.ts));
+  if (!list.length) return;
+  const wrap = document.createElement("div");
+  list.forEach(s=> wrap.appendChild(suggEl(s, user && user.role==="admin")));
+  const s = sec("Suggestions on this cell", wrap); s.id="cellHist";
+  body.appendChild(s);
+}
+function mkTab(t,on){ const b=document.createElement("button"); b.className="tab"+(on?" on":""); b.textContent=t; return b; }
+function sec(title, node){
+  const d = document.createElement("div"); d.className="p-sec";
+  const h = document.createElement("h3"); h.textContent = title;
+  d.append(h, node); return d;
+}
+function closePanel(){ document.getElementById("panel").classList.remove("open"); activeCellId = null; }
+
+function togglePanelMine(){
+  const body = document.getElementById("pBody"); body.innerHTML = "";
+  document.getElementById("pCrumb").textContent = "Your activity";
+  document.getElementById("pTitle").textContent = "My suggestions";
+  const mine = suggestions.filter(s=>s.user===user.name).sort((a,b)=>b.ts.localeCompare(a.ts));
+  if (!mine.length){ const p=document.createElement("p"); p.style.color="var(--muted)"; p.textContent="Nothing yet — click any cell to suggest an edit."; body.appendChild(p); }
+  else { const w=document.createElement("div"); mine.forEach(s=>w.appendChild(suggEl(s,false))); body.appendChild(w); }
+  document.getElementById("panel").classList.add("open");
+}
+
+/* suggestion card (sanitized: all user text via textContent) */
+function suggEl(s, withActions){
+  const e = cellIndex[s.cellId];
+  const d = document.createElement("div"); d.className="sugg";
+  const meta = document.createElement("div"); meta.className="meta";
+  const left = document.createElement("span"); left.textContent = s.user + " · " + new Date(s.ts).toLocaleString();
+  const st = document.createElement("span"); st.className = "st " + s.status; st.textContent = s.status;
+  meta.append(left, st); d.appendChild(meta);
+  const where = document.createElement("div"); where.style.fontWeight="600";
+  where.textContent = (e ? e.disc.name + " → " + e.cell.label : s.cellId);
+  d.appendChild(where);
+  if (s.type === "edit"){
+    if (s.proposedLabel){
+      const r = document.createElement("div"); r.className="diff";
+      const o=document.createElement("span"); o.className="old"; o.textContent = e ? e.cell.label : "";
+      const n=document.createElement("span"); n.className="new"; n.textContent = " → " + s.proposedLabel;
+      r.append("Label: ",o,n); d.appendChild(r);
+    }
+    if (s.proposedTooltip){
+      const r = document.createElement("div"); r.className="diff";
+      const n=document.createElement("span"); n.className="new"; n.textContent = s.proposedTooltip;
+      r.append("Tooltip → ", n); d.appendChild(r);
+    }
+    if (s.comment){ const c=document.createElement("div"); c.style.color="var(--muted)"; c.textContent = "Reason: " + s.comment; d.appendChild(c); }
+  } else {
+    const c = document.createElement("div"); c.textContent = "💬 " + s.comment; d.appendChild(c);
+  }
+  if (withActions && s.status==="pending"){
+    const a = document.createElement("div"); a.className="acts";
+    const ok = document.createElement("button"); ok.className="ok"; ok.textContent="Approve & apply"; ok.onclick=()=>decide(s.id,"approve");
+    const no = document.createElement("button"); no.className="no"; no.textContent="Reject"; no.onclick=()=>decide(s.id,"reject");
+    if (s.type==="comment") ok.textContent = "Mark addressed";
+    a.append(ok,no); d.appendChild(a);
+  }
+  return d;
+}
+
+/* =====================================================================
+   Admin queue
+   ===================================================================== */
+function toggleQueue(){ const q=document.getElementById("queue"); q.classList.toggle("open"); if (q.classList.contains("open")) renderQueue(); }
+function renderQueue(){
+  const b = document.getElementById("qBody"); b.innerHTML = "";
+  const pending = suggestions.filter(s=>s.status==="pending").sort((a,b2)=>a.ts.localeCompare(b2.ts));
+  const done = suggestions.filter(s=>s.status!=="pending").sort((a,b2)=>b2.ts.localeCompare(a.ts));
+  document.getElementById("qSummary").textContent = pending.length + " pending · " + done.length + " decided";
+  if (!pending.length){ const e=document.createElement("div"); e.className="q-empty"; e.textContent="No pending suggestions. Invite more reviewers!"; b.appendChild(e); }
+  pending.forEach(s=>b.appendChild(suggEl(s,true)));
+  if (done.length){
+    const h=document.createElement("h3"); h.style.cssText="font-size:11px;text-transform:uppercase;color:var(--muted);margin:14px 0 8px"; h.textContent="Decided";
+    b.appendChild(h); done.forEach(s=>b.appendChild(suggEl(s,false)));
+  }
+}
+function refreshBadges(){
+  const p = suggestions.filter(s=>s.status==="pending").length;
+  const qc = document.getElementById("qCount"); qc.style.display = p?"":"none"; qc.textContent = p;
+  if (user){
+    const m = suggestions.filter(s=>s.user===user.name).length;
+    const mc = document.getElementById("myCount"); mc.style.display = m?"":"none"; mc.textContent = m;
+  }
+}
+
+/* Export the framework with approved edits merged — paste into framework.json
+   (in production, n8n does this merge server-side on approval). */
+function exportApproved(){
+  const clean = JSON.parse(JSON.stringify(FRAMEWORK, (k,v)=> k.startsWith("_") ? undefined : v));
+  const blob = new Blob([JSON.stringify(clean,null,1)], {type:"application/json"});
+  const a = document.createElement("a"); a.href = URL.createObjectURL(blob); a.download = "framework.updated.json"; a.click();
+}
+
+/* =====================================================================
+   Boot
+   ===================================================================== */
+document.getElementById("fwVer").textContent = FRAMEWORK.version;
+loadSuggestions().then(()=>{ renderGrid(); refreshBadges(); });
+document.addEventListener("keydown", e=>{ if (e.key==="Escape"){ closePanel(); document.getElementById("queue").classList.remove("open"); } });
+</script>
+</body>
+</html>
