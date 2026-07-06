@@ -1,0 +1,5 @@
+# Security: Ignore environment variable files
+.env
+.env.local
+.env.*.local
+*.env
